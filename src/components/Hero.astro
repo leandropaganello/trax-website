@@ -1,0 +1,141 @@
+---
+import RadioPlayer from './RadioPlayer.astro';
+---
+
+<section class="hero" id="hero">
+  <div class="hero-bg">
+    <div class="hero-gradient"></div>
+    <div class="hero-grid"></div>
+    <div class="hero-glow"></div>
+  </div>
+
+  <div class="hero-content container">
+    <div class="hero-text">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        TRAX
+      </div>
+
+      <h1 class="hero-title">
+        Jesus Saves<br />
+        <span class="accent">Next Level</span>
+      </h1>
+
+      <p class="hero-subtitle">
+        Der Gottesdienst von TRAX live &mdash; Lehn' Dich zurück und genieß es.
+      </p>
+    </div>
+
+    <RadioPlayer />
+  </div>
+</section>
+
+<style>
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    padding: 120px 0 80px;
+  }
+
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+
+  .hero-gradient {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(221, 81, 25, 0.12) 0%, transparent 70%),
+                radial-gradient(ellipse 60% 50% at 80% 50%, rgba(221, 81, 25, 0.06) 0%, transparent 60%);
+  }
+
+  .hero-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 70% 70% at 50% 30%, black 20%, transparent 70%);
+    -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 30%, black 20%, transparent 70%);
+  }
+
+  .hero-glow {
+    position: absolute;
+    top: -20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(221, 81, 25, 0.18) 0%, transparent 70%);
+    filter: blur(80px);
+    animation: pulse 4s ease-in-out infinite;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 48px;
+    animation: fadeInUp 0.8s ease-out;
+  }
+
+  .hero-text {
+    text-align: center;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 20px;
+    background: rgba(221, 81, 25, 0.1);
+    border: 1px solid rgba(221, 81, 25, 0.25);
+    border-radius: 100px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--trax-orange-light);
+    margin-bottom: 28px;
+    letter-spacing: 0.06em;
+  }
+
+  .badge-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--trax-orange);
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  .hero-title {
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    margin-bottom: 20px;
+  }
+
+  .accent {
+    color: var(--trax-orange);
+  }
+
+  .hero-subtitle {
+    font-size: clamp(1rem, 2vw, 1.2rem);
+    color: var(--text-secondary);
+    max-width: 500px;
+    margin: 0 auto;
+    line-height: 1.7;
+  }
+
+  @media (max-width: 768px) {
+    .hero {
+      padding: 100px 0 60px;
+    }
+  }
+</style>
