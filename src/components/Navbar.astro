@@ -23,7 +23,7 @@
       <li><a href="#about">Info</a></li>
       <li><a href="#kontakt">Kontakt</a></li>
       <li>
-        <a href="https://traxjedenfreitag.de/public/trax" target="_blank" class="nav-cta">
+        <a href="https://azura.traxjedenfreitag.de/public/trax" target="_blank" class="nav-cta">
           Admin
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
         </a>
@@ -57,7 +57,7 @@
 
   async function checkStatus() {
     try {
-      const res = await fetch('https://traxjedenfreitag.de/api/nowplaying/1');
+      const res = await fetch('https://azura.traxjedenfreitag.de/api/nowplaying/1');
       const data = await res.json();
       const isLive = data.live?.is_live || false;
 
