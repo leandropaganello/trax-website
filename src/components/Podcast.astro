@@ -1,0 +1,304 @@
+---
+const FEED_URL = 'https://anchor.fm/s/1137ab73c/podcast/rss';
+
+interface Episode {
+  title: string;
+  description: string;
+  published: string;
+  duration: string;
+  audioUrl: string;
+  image: string;
+  link: string;
+}
+
+function decodeEntities(str: string): string {
+  return str
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ');
+}
+
+function stripHtml(html: string): string {
+  return decodeEntities(html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim());
+}
+
+async function fetchEpisodes(): Promise<Episode[]> {
+  try {
+    const res = await fetch(FEED_URL, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+    });
+    if (!res.ok) return [];
+    const xml = await res.text();
+
+    const titleRe = /<title><!\[CDATA\[(.*?)\]\]><\/title>/gs;
+    const descRe = /<description><!\[CDATA\[(.*?)\]\]><\/description>/gs;
+    const pubRe = /<pubDate>(.*?)<\/pubDate>/gs;
+    const durationRe = /<itunes:duration>(.*?)<\/itunes:duration>/gs;
+    const audioRe = /<enclosure url="(.*?)"/gs;
+    const linkRe = /<link>(.*?)<\/link>/gs;
+    const imageRe = /<itunes:image href="(.*?)"\/>/gs;
+
+    const titles = [...xml.matchAll(titleRe)].map(m => m[1]);
+    const durations = [...xml.matchAll(durationRe)].map(m => m[1]);
+    const pubDates = [...xml.matchAll(pubRe)].map(m => m[1]);
+    const audios = [...xml.matchAll(audioRe)].map(m => m[1]);
+    const links = [...xml.matchAll(linkRe)].map(m => m[1]);
+    const images = [...xml.matchAll(imageRe)].map(m => m[1]);
+
+    const itemBlocks = xml.split(/<item>/).slice(1);
+    const descriptions = itemBlocks.map(block => {
+      const m = block.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>/);
+      return m ? m[1] : '';
+    });
+
+    const count = titles.length;
+    const episodes: Episode[] = [];
+
+    for (let i = 0; i < count; i++) {
+      const d = durations[i] ?? '00:00';
+      const pub = pubDates[i] ?? '';
+      const date = pub
+        ? new Date(pub).toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })
+        : '';
+
+      episodes.push({
+        title: titles[i] ?? 'Ohne Titel',
+        description: descriptions[i] ? stripHtml(descriptions[i]) : '',
+        published: date,
+        duration: d,
+        audioUrl: audios[i] ?? '',
+        image: images[i + 1] ?? images[0] ?? '',
+        link: links[i + 1] ?? '',
+      });
+    }
+
+    return episodes.slice(0, 6);
+  } catch {
+    return [];
+  }
+}
+
+const episodes = await fetchEpisodes();
+---
+
+<section class="podcast-section" id="podcast">
+  <div class="container">
+    <div class="podcast-header">
+      <span class="section-tag">Podcast</span>
+      <h2 class="podcast-title">Predigten zum Nachhören</h2>
+      <p class="podcast-text">
+        Jeden Freitag treffen wir uns als Jugendkirche und feiern Gottesdienst. Verpasst? Kein Problem &mdash; hier kannst du alle Predigten anhören.
+      </p>
+    </div>
+
+    <div class="episodes-list">
+      {episodes.length > 0 ? (
+        episodes.map((ep) => (
+          <article class="episode-card">
+            {ep.image && <img src={ep.image} alt={ep.title} class="episode-image" loading="lazy" />}
+            <div class="episode-content">
+              <div class="episode-meta">
+                <span class="episode-date">{ep.published}</span>
+                <span class="episode-duration">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  {ep.duration}
+                </span>
+              </div>
+              <h3 class="episode-title">{ep.title}</h3>
+              {ep.description && <p class="episode-desc">{ep.description}</p>}
+              {ep.audioUrl && (
+                <audio class="episode-audio" controls preload="none" src={ep.audioUrl}></audio>
+              )}
+            </div>
+          </article>
+        ))
+      ) : (
+        <p class="podcast-empty">Episoden konnten nicht geladen werden. Schau später wieder vorbei.</p>
+      )}
+    </div>
+
+    <div class="podcast-actions">
+      <a href="https://podcasters.spotify.com/pod/show/trax-jeden-freitag" target="_blank" class="podcast-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="m16 6-4-4-4 4"/><path d="M12 2v13"/></svg>
+        Alle Episoden anhören
+      </a>
+      <a href="https://anchor.fm/s/1137ab73c/podcast/rss" target="_blank" class="podcast-rss">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>
+        RSS Feed
+      </a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .podcast-section {
+    padding: 80px 0;
+  }
+
+  .podcast-header {
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto 48px;
+  }
+
+  .section-tag {
+    display: inline-block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--trax-orange);
+    margin-bottom: 12px;
+  }
+
+  .podcast-title {
+    font-size: clamp(1.5rem, 3vw, 2.2rem);
+    font-weight: 800;
+    margin-bottom: 12px;
+  }
+
+  .podcast-text {
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+
+  .episodes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .episode-card {
+    display: flex;
+    gap: 24px;
+    background: var(--bg-card);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    transition: var(--transition);
+  }
+
+  .episode-card:hover {
+    border-color: rgba(221, 81, 25, 0.2);
+  }
+
+  .episode-image {
+    width: 112px;
+    height: 112px;
+    flex-shrink: 0;
+    border-radius: var(--radius);
+    object-fit: cover;
+  }
+
+  .episode-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .episode-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 8px;
+  }
+
+  .episode-date {
+    font-size: 0.8rem;
+    color: var(--trax-orange-light);
+    font-weight: 600;
+  }
+
+  .episode-duration {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .episode-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }
+
+  .episode-desc {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+
+  .episode-audio {
+    width: 100%;
+    height: 40px;
+  }
+
+  .episode-audio::-webkit-media-controls-panel {
+    background: var(--bg-card-hover);
+  }
+
+  .podcast-empty {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 40px 0;
+  }
+
+  .podcast-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 40px;
+  }
+
+  .podcast-btn,
+  .podcast-rss {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 24px;
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    transition: var(--transition);
+  }
+
+  .podcast-btn {
+    background: var(--trax-orange);
+    color: #fff;
+  }
+
+  .podcast-btn:hover {
+    background: var(--trax-orange-dark);
+  }
+
+  .podcast-rss {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-secondary);
+  }
+
+  .podcast-rss:hover {
+    background: rgba(221, 81, 25, 0.1);
+    border-color: rgba(221, 81, 25, 0.25);
+    color: var(--trax-orange-light);
+  }
+
+  @media (max-width: 640px) {
+    .episode-card {
+      flex-direction: column;
+    }
+
+    .episode-image {
+      width: 100%;
+      height: auto;
+      max-height: 200px;
+    }
+  }
+</style>
