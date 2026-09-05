@@ -33,45 +33,34 @@ async function fetchEpisodes(): Promise<Episode[]> {
     if (!res.ok) return [];
     const xml = await res.text();
 
-    const titleRe = /<title><!\[CDATA\[(.*?)\]\]><\/title>/gs;
-    const descRe = /<description><!\[CDATA\[(.*?)\]\]><\/description>/gs;
-    const pubRe = /<pubDate>(.*?)<\/pubDate>/gs;
-    const durationRe = /<itunes:duration>(.*?)<\/itunes:duration>/gs;
-    const audioRe = /<enclosure url="(.*?)"/gs;
-    const linkRe = /<link>(.*?)<\/link>/gs;
-    const imageRe = /<itunes:image href="(.*?)"\/>/gs;
-
-    const titles = [...xml.matchAll(titleRe)].map(m => m[1]);
-    const durations = [...xml.matchAll(durationRe)].map(m => m[1]);
-    const pubDates = [...xml.matchAll(pubRe)].map(m => m[1]);
-    const audios = [...xml.matchAll(audioRe)].map(m => m[1]);
-    const links = [...xml.matchAll(linkRe)].map(m => m[1]);
-    const images = [...xml.matchAll(imageRe)].map(m => m[1]);
+    const podcastImage = xml.match(/<itunes:image href="([^"]+)"/)?.[1] ?? '';
 
     const itemBlocks = xml.split(/<item>/).slice(1);
-    const descriptions = itemBlocks.map(block => {
-      const m = block.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>/);
-      return m ? m[1] : '';
-    });
-
-    const count = titles.length;
     const episodes: Episode[] = [];
 
-    for (let i = 0; i < count; i++) {
-      const d = durations[i] ?? '00:00';
-      const pub = pubDates[i] ?? '';
+    for (const block of itemBlocks) {
+      const title = block.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/)?.[1];
+      if (!title) continue;
+
+      const description = block.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>/)?.[1] ?? '';
+      const pub = block.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] ?? '';
+      const duration = block.match(/<itunes:duration>(.*?)<\/itunes:duration>/)?.[1] ?? '00:00';
+      const audioUrl = block.match(/<enclosure url="([^"]+)"/)?.[1] ?? '';
+      const link = block.match(/<link>([\s\S]*?)<\/link>/)?.[1]?.trim() ?? '';
+      const image = block.match(/<itunes:image href="([^"]+)"/)?.[1] ?? podcastImage;
+
       const date = pub
         ? new Date(pub).toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })
         : '';
 
       episodes.push({
-        title: titles[i] ?? 'Ohne Titel',
-        description: descriptions[i] ? stripHtml(descriptions[i]) : '',
+        title,
+        description: description ? stripHtml(description) : '',
         published: date,
-        duration: d,
-        audioUrl: audios[i] ?? '',
-        image: images[i + 1] ?? images[0] ?? '',
-        link: links[i + 1] ?? '',
+        duration,
+        audioUrl,
+        image,
+        link,
       });
     }
 
